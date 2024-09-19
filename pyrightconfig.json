@@ -1,0 +1,7 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  // "reportUnusedImport": "information",
+  "reportUnboundVariable": "none",
+  "typeCheckingMode": "off"
+}
