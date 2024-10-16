@@ -45,13 +45,13 @@ def get_profile_pic(gender=None):
     if not photos:
         return None
 
-    if gender is None:
-        return os.path.join(os.getcwd(), photo_dir, photos[0])
+    if gender:
+        if gender_photos := [
+            photo for photo in photos if photo.startswith(gender)
+        ]:
+            return os.path.join(photo_dir, gender_photos[0])
 
-    for photo in photos:
-        if photo.startswith(gender):
-            return os.path.join(os.getcwd(), photo_dir, photo)
-    return None
+    return os.path.join(photo_dir, random.choice(photos))
 
 def build_username(firstname, lastname):
     n = random.randint(0, 1000)
@@ -101,7 +101,7 @@ def change_username(driver:Chrome, firstname, lastname):
     )
     try:
         btn.click()
-    except:
+    except Exception:
         # click with javascript
         driver.execute_script("arguments[0].click();", btn)
     logging.info(f'Successfully changed username for {driver.email} to {username}')
@@ -109,7 +109,7 @@ def change_username(driver:Chrome, firstname, lastname):
 
 def change_profile_pic(driver:Chrome, gender):
     logging.info(f'Changing profile pic for {driver.email}')
-    photo = get_profile_pic() # TODO: Pass gender
+    photo = get_profile_pic(gender)
     if not photo:
         logging.error('No profile pic found in folder')
         return

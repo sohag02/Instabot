@@ -49,7 +49,7 @@ def handle_notification_popup(driver):
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.XPATH, '//button[text()="Not Now"]'))
         ).click()
-    except:
+    except Exception:
         pass
 
 if __name__ == '__main__':

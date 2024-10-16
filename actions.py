@@ -18,9 +18,10 @@ def comment(driver: Chrome, comment):
         input.send_keys(comment)
         input.send_keys(Keys.ENTER)
         logging.info(f'Commented with {driver.email} : {comment}')
+        return True
     except Exception as e:
         logging.error(f'Failed to comment with {driver.email}')
-        raise
+        return False
 
 
 def like(driver: Chrome):
@@ -32,15 +33,17 @@ def like(driver: Chrome):
         # click with js
         driver.execute_script("arguments[0].click();", like_parent_div)
         logging.info(f'Liked with {driver.email}')
+        return True
     except Exception as e:
         try:
             WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, '//*[local-name()="svg" and @aria-label="Unlike" and @height="24"]'))
             )
             logging.info(f'Already liked with {driver.email}')
+            return True
         except:
             logging.error(f'Failed to like with {driver.email}')
-            raise
+            return False
 
 def watch_story(driver: Chrome, username, from_profile=True):
     try:
@@ -59,7 +62,7 @@ def watch_story(driver: Chrome, username, from_profile=True):
                 vid_elem = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.TAG_NAME, 'video'))
                 )
-            except:
+            except Exception:
                 break
             WebDriverWait(driver, 30).until(
                 EC.text_to_be_present_in_element_attribute((By.TAG_NAME, 'video'), 'src', vid_elem.get_attribute('src'))
@@ -67,18 +70,17 @@ def watch_story(driver: Chrome, username, from_profile=True):
             count += 1
             print('next story')
         logging.info(f'Stopped watching story with {driver.email} | count : {count}')
-        # WebDriverWait(driver, 1000).until_not(
-        #     lambda d: d.find_element(By.TAG_NAME, 'video')
-        # )
-        # change = check_dom_changes(driver, timeout=60)
-        # if change:
-        #     print('next story')
-        #     count += 1
-        # else:
-        #     logging.info(f'Stopped watching story with {driver.email} | count : {count}')
+            # WebDriverWait(driver, 1000).until_not(
+            #     lambda d: d.find_element(By.TAG_NAME, 'video')
+            # )
+            # change = check_dom_changes(driver, timeout=60)
+            # if change:
+            #     print('next story')
+            #     count += 1
+            # else:
+            #     logging.info(f'Stopped watching story with {driver.email} | count : {count}')
     except Exception as e:
         logging.error(f'Failed to watch story with {driver.email}')
-        raise
 
 def work_on_story(driver: Chrome, links:list):
     logging.info(f'Working on stories with {driver.email}')
@@ -87,9 +89,14 @@ def work_on_story(driver: Chrome, links:list):
         if not driver.current_url.startswith(link):
             driver.get(link)
             wait_for_page_load(driver)
-            WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, f'//div[text()="View story" and @role="button"]'))
-            ).click()
+            try:
+                WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, '//div[text()="View story" and @role="button"]')
+                    )
+                ).click()
+            except Exception:
+                pass
         like(driver)
         current_url = driver.current_url
         WebDriverWait(driver, 10).until(
@@ -140,10 +147,8 @@ def share(driver: Chrome, usernames):
         )
         send_btn.click()
         logging.info(f'Successfully shared with to {len(usernames)} users with {driver.email}')
+        return True
     except Exception as e:
         logging.error(f'Failed to share with {driver.email}')
-        
-    except Exception as e:
-        logging.error(f'Failed to share with {driver.email}')
-        print(e)
+        return False
     

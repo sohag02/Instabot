@@ -1,3 +1,4 @@
+
 import configparser
 import logging
 import random
@@ -36,18 +37,21 @@ class Config:
         self.watch_time = self._get_int_from_range('options', 'watch_time')
         self.story_likes = self._get_int_from_range('options', 'story_likes')
 
-        # Scrapper
-        self.scrapper_mode = self.config.getboolean('scrapper', 'scrapper_mode')
-        if self.scrapper_mode:
-            self.target_username = self.config.get('scrapper', 'username').strip()
-            self.range = self.config.getint('scrapper', 'range')
-
         # Monitor
         self.monitor_mode = self.config.getboolean('monitor', 'monitor_mode')
         if self.monitor_mode:
             self.target_username = self.config.get('monitor', 'username').strip()
             self.content.story = False
             self.follows = None
+
+        # Livestream
+        self.livestream_mode = self.config.getboolean('livestream', 'livestream_mode')
+        if self.livestream_mode:
+            self.target_username = self.config.get('livestream', 'username').strip()
+            self.content.story = False
+            self.follows = None
+            self.watch_time = self._get_int_from_range('livestream', 'watch_time')
+            self.comments = self._get_int_from_range('livestream', 'comments')
 
         # Proxy
         self.use_proxy = self.config.getboolean('proxy', 'use_proxy', fallback=False)
@@ -64,6 +68,9 @@ class Config:
         # Settings
         self.headless = self.config.getboolean('settings', 'headless', fallback=False)
 
+        # Validate
+        self.validate()
+
 
     def _get_optional_int(self, section, option):
         """Returns the value as an integer if present and non-zero, or None if empty or zero."""
@@ -72,8 +79,9 @@ class Config:
 
     def _get_int_from_range(self, section, option):
         """Returns the value as an integer if present and non-zero, or None if empty or zero."""
-        value = self.config.get(section, option, fallback=None)
-        if value:
+        if not (value := self.config.get(section, option, fallback=None)):
+            return None
+        if '-' in value:
             try:
                 start, end = value.split('-')
                 return random.randint(int(start), int(end))
@@ -82,9 +90,12 @@ class Config:
                     return None
                 logger.error(f"Invalid range value for {option}: {value}")
                 exit()
-
         else:
-            return None
+            try:
+                return int(value)
+            except Exception:
+                logger.error(f"Invalid value for {option}: {value}")
+                exit()
 
 
     def validate(self):

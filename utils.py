@@ -7,6 +7,7 @@ from instaloader import Instaloader, Profile
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 import logging
 import csv
 import pandas as pd
@@ -33,7 +34,7 @@ def wait_for_page_load(driver, timeout=10):
 
 def get_links(driver: Chrome, username, range, type=None, log=True):
     if log:
-        logging.info(f'Fetching {type if type else ''} links for {username}')
+        logging.info(f'Fetching {type or ''} links for {username}')
 
     url = '/'  # Default value
     if type == 'reel':
@@ -75,16 +76,13 @@ def get_links(driver: Chrome, username, range, type=None, log=True):
 
 def get_random_session():
     sessions = os.listdir('sessions')
-    if not sessions:
-        return None
-    return random.choice(sessions)
+    return random.choice(sessions) if sessions else None
 
 
 def get_share_usernames():
     with open('usernames.csv') as f:
         reader = csv.reader(f)
-        usernames = [row[0] for row in reader]
-        return usernames
+        return [row[0] for row in reader]
 
 
 def isSetup(profile):
@@ -110,9 +108,12 @@ def get_accounts(count: int):
         logging.error(
             'No sessions found in Folder. Please run login.py first.')
         return
+    
+    if len(sessions) < count:
+        logging.error("Not enough accounts to perform requested actions. Please reduce the range or accounts to use.")
+        exit()
 
-    accounts = random.sample(sessions, count)
-    return accounts
+    return random.sample(sessions, count)
 
 
 def is_empty(generator):
@@ -162,12 +163,20 @@ def login(context: Instaloader, session_file):
     context.context.username = user_id
     context.context._session.cookies.update(instaloader_session)
 
+def handle_notification_popup(driver):
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Not Now"]'))
+        ).click()
+    except Exception:
+        pass
+
 def get_stories(username):
     try:
         L = Instaloader()
 
         # Load and convert the session
-        session = 'jessica.brown.202121@gmail.com.pkl'#get_random_session() #TODO: change this
+        session = get_random_session()
         print(session)
         logging.info(f"Using session {session} to fetch stories for {username}")
         if not session:
@@ -181,8 +190,10 @@ def get_stories(username):
         stories = L.get_stories(userids=[profile.userid])
         story_links = []
         for story in stories:
-            for item in story.get_items():
-                story_links.append(f'https://www.instagram.com/stories/{username}/{item.mediaid}')
+            story_links.extend(
+                f'https://www.instagram.com/stories/{username}/{item.mediaid}'
+                for item in story.get_items()
+            )
         L.close()
         return story_links
     except:
